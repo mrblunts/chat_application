@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat App</title>
+    <link rel="stylesheet" href="styel.css">
+    <link rel="JavaScript" href="./index.js">
+</head>
+<body>
+    <div class="container">
+        <h1 class="logo">Chat Room</h1>
+        <form class="form" id="form">
+            <input class="input" type="text" placeholder="Name" id="myname" required>
+            <input class="input" type="text" placeholder="Message" id="message" required>
+            <button class="button" type="submit">Send Message</button>
+        </form>
+        <div class="messageArea" id="messageArea"></div>
+        <div id="typingIndicator"></div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        let socket = io();
+        let form = document.getElementById('form');
+        let myname = document.getElementById('myname');
+        let message = document.getElementById('message');
+        let messageArea = document.getElementById('messageArea');
+        let typingIndicator = document.getElementById('typingIndicator');
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            if (message.value) {
+                socket.emit('send name', myname.value);
+                socket.emit('send message', message.value);
+                message.value = '';
+                typingIndicator.style.display = 'none'; // Hide typing indicator when message is sent
+            }
+        });
+
+        socket.on('send name', (username) => {
+            let name = document.createElement('p');
+            name.classList.add('message', 'name');
+            name.innerHTML = `<span class="username">${username}:</span>`;
+            messageArea.appendChild(name);
+            messageArea.scrollTop = messageArea.scrollHeight; // Auto-scroll
+        });
+
+        socket.on('send message', (chat) => {
+            let chatContent = document.createElement('p');
+            chatContent.classList.add('message', 'chat');
+            chatContent.textContent = chat;
+            messageArea.appendChild(chatContent);
+            messageArea.scrollTop = messageArea.scrollHeight; // Auto-scroll
+        });
+
+        socket.on('typing', (username) => {
+            typingIndicator.innerHTML = `${username} is typing...`;
+            typingIndicator.style.display = 'block';
+        });
+
+        socket.on('stop typing', () => {
+            typingIndicator.style.display = 'none';
+        });
+
+        message.addEventListener('input', () => {
+            if (message.value) {
+                socket.emit('typing', myname.value);
+            } else {
+                socket.emit('stop typing');
+            }
+        });
+    </script>
+</body>
+</html>
